@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@copilotkit/react-core": "^1.4.7",
+    "@copilotkit/react-ui": "^1.4.7",
+    "@copilotkit/runtime": "^1.4.7",
+    "@langchain/openai": "^0.3.16"
+  }
+}
