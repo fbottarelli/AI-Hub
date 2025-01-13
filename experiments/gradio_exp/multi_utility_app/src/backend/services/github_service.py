@@ -123,3 +123,40 @@ class GitHubService:
             error_msg = f"Error analyzing repository: {str(e)}"
             logger.error(error_msg)
             return error_msg, error_msg, error_msg, None 
+
+    @staticmethod
+    def format_clipboard_content(summary: str, tree: str, content: str) -> str:
+        """Format the content for clipboard copying"""
+        sections = []
+        
+        if summary:
+            sections.extend(["Summary:", summary])
+        
+        if tree:
+            sections.extend(["\nDirectory Structure:", tree])
+        
+        if content:
+            sections.extend(["\nContent Analysis:", content])
+        
+        return "\n".join(sections) 
+
+    @staticmethod
+    def get_raw_content(url: str) -> str:
+        """Get raw content of the repository"""
+        try:
+            logger.info(f"Getting raw content for repository: {url}")
+            
+            # Check if it's a GitHub URL
+            is_github = GitHubService.is_github_url(url)
+            if not is_github:
+                return "Please enter a valid GitHub repository URL"
+
+            # Use gitingest to get repository content
+            _, _, content = ingest(url)
+            
+            # Return the raw content
+            return content
+        except Exception as e:
+            error_msg = f"Error getting repository content: {str(e)}"
+            logger.error(error_msg)
+            return error_msg 

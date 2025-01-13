@@ -1,5 +1,7 @@
 import gradio as gr
 import logging
+import json
+import os
 from ...backend.services.twitter_service import TwitterService
 from ...backend.utils.formatters import format_tweet_results
 from ...frontend.config.ui_settings import UIConfig
@@ -11,89 +13,70 @@ def create_twitter_tab():
     twitter_service = TwitterService()
     
     with gr.Blocks() as twitter_interface:
-        gr.Markdown(UIConfig.TWITTER_TAB_DESCRIPTION)
+        gr.Markdown("""
+        # 🐦 Twitter/X Utilities
+        Process your Twitter data and more features coming soon!
+        """)
         
-        with gr.Tab("Sentiment Analysis"):
-            tweet_input = gr.Textbox(
-                label="Enter tweet text",
-                placeholder="Enter the tweet you want to analyze...",
-                lines=UIConfig.TWEET_INPUT_LINES
-            )
-            analyze_button = gr.Button("Analyze Sentiment")
-            sentiment_output = gr.Textbox(
-                label="Sentiment Analysis",
-                lines=5
-            )
+        with gr.Tab("Process JSON"):
+            gr.Markdown("""
+            ## Tweet JSON Processor
+            Upload a JSON file containing tweets and create a filtered version with selected fields (id, text, url, media).
+            """)
             
-            analyze_button.click(
-                twitter_service.analyze_sentiment,
-                inputs=[tweet_input],
-                outputs=[sentiment_output]
-            )
-            
-        with gr.Tab("Thread Generator"):
             with gr.Row():
-                topic_input = gr.Textbox(
-                    label="Topic",
-                    placeholder="Enter the topic for your thread..."
+                json_file = gr.File(
+                    label="Upload Tweet JSON",
+                    file_types=[".json"],
+                    type="binary"
                 )
-                num_tweets = gr.Slider(
-                    minimum=2,
-                    maximum=5,
-                    value=3,
-                    step=1,
-                    label="Number of tweets"
+                output_name = gr.Textbox(
+                    label="Output Filename",
+                    placeholder="filtered_tweets.json",
+                    value="filtered_tweets.json"
                 )
             
-            generate_button = gr.Button("Generate Thread")
-            thread_output = gr.Textbox(
-                label="Generated Thread",
-                lines=UIConfig.THREAD_OUTPUT_LINES
+            process_button = gr.Button("Process JSON")
+            status_output = gr.Textbox(
+                label="Status",
+                lines=2
             )
             
-            generate_button.click(
-                twitter_service.generate_thread,
-                inputs=[topic_input, num_tweets],
-                outputs=[thread_output]
-            )
+            def handle_json_processing(file, output_name):
+                if not file:
+                    return "Please upload a JSON file"
+                
+                try:
+                    # Read and parse JSON
+                    content = file.decode('utf-8')
+                    tweets = json.loads(content)
+                    
+                    # Process JSON and save filtered version
+                    output_path = os.path.join("downloads", output_name)
+                    return twitter_service.process_tweet_json(tweets, output_path)
+                except Exception as e:
+                    error_msg = f"Error processing JSON: {str(e)}"
+                    logger.error(error_msg)
+                    return error_msg
             
-        with gr.Tab("Hashtag Suggestions"):
-            content_input = gr.Textbox(
-                label="Content",
-                placeholder="Enter your tweet content to get hashtag suggestions...",
-                lines=UIConfig.TWEET_INPUT_LINES
+            process_button.click(
+                handle_json_processing,
+                inputs=[json_file, output_name],
+                outputs=[status_output]
             )
-            suggest_button = gr.Button("Suggest Hashtags")
-            hashtags_output = gr.Textbox(
-                label="Suggested Hashtags",
-                lines=UIConfig.HASHTAG_OUTPUT_LINES
-            )
+
+        with gr.Tab("Coming Soon"):
+            gr.Markdown("""
+            ## 🚧 More Features Coming Soon!
             
-            suggest_button.click(
-                twitter_service.suggest_hashtags,
-                inputs=[content_input],
-                outputs=[hashtags_output]
-            )
+            Future features will include:
+            - Sentiment Analysis
+            - Thread Generation
+            - Hashtag Suggestions
+            - Tweet Search
+            - And more!
             
-        with gr.Tab("Search Tweets (Demo)"):
-            search_input = gr.Textbox(
-                label="Search Query",
-                placeholder="Enter search terms..."
-            )
-            search_button = gr.Button("Search")
-            search_results = gr.Textbox(
-                label="Search Results",
-                lines=UIConfig.SEARCH_RESULTS_LINES
-            )
-            
-            def handle_search(query):
-                tweets = twitter_service.search_tweets(query)
-                return format_tweet_results(tweets)
-            
-            search_button.click(
-                handle_search,
-                inputs=[search_input],
-                outputs=[search_results]
-            )
+            Stay tuned for updates!
+            """)
             
     return twitter_interface 

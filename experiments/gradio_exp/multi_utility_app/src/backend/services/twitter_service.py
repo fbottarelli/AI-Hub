@@ -1,5 +1,7 @@
 import logging
 from typing import List, Dict
+import json
+import os
 from ..utils.llm import call_llm
 
 logger = logging.getLogger(__name__)
@@ -84,3 +86,38 @@ class TwitterService:
         except Exception as e:
             logger.error(f"Error searching tweets: {str(e)}")
             return [] 
+
+    @staticmethod
+    def process_tweet_json(input_json: List[Dict], output_path: str) -> str:
+        """Process tweet JSON data and create a filtered version with selected fields.
+        
+        Args:
+            input_json: List of tweet dictionaries
+            output_path: Path to save the filtered JSON
+            
+        Returns:
+            str: Status message indicating success or failure
+        """
+        try:
+            filtered_tweets = []
+            for tweet in input_json:
+                filtered_tweet = {
+                    "id": tweet.get("id"),
+                    "text": tweet.get("full_text") or tweet.get("text"),
+                    "url": tweet.get("url"),
+                    "media": tweet.get("media", [])
+                }
+                filtered_tweets.append(filtered_tweet)
+            
+            # Create output directory if it doesn't exist
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            
+            # Save filtered JSON
+            with open(output_path, 'w', encoding='utf-8') as f:
+                json.dump(filtered_tweets, f, ensure_ascii=False, indent=2)
+            
+            return f"Successfully processed {len(filtered_tweets)} tweets and saved to {output_path}"
+        except Exception as e:
+            error_msg = f"Error processing tweet JSON: {str(e)}"
+            logger.error(error_msg)
+            return error_msg 

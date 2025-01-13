@@ -39,6 +39,20 @@ TODO:
 - [ ] Temperature monitoring (Raspberry Pi specific)
 - [ ] System logs viewer
 
+### 2. GitHub Repository Analysis
+Current Features:
+- Analyze GitHub repositories
+- View repository structure and content
+- Generate AI-powered summaries
+- Copy analysis results to clipboard
+- Export analysis to markdown files
+
+TODO:
+- [ ] Add support for private repositories
+- [ ] Implement diff analysis between commits
+- [ ] Add code quality metrics
+- [ ] Enable custom analysis templates
+
 ## Setup
 
 1. Clone the repository

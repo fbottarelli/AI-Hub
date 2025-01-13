@@ -5,71 +5,89 @@ def create_github_tab():
     """Create the GitHub ingestion tab"""
     
     with gr.Column():
-        gr.Markdown("## GitHub Repository Ingestion")
-        gr.Markdown("Enter a GitHub repository URL to analyze and create a text digest.")
+        gr.Markdown("## 📊 GitHub Repository Analyzer")
         
         with gr.Row():
-            input_url = gr.Textbox(
+            repo_url = gr.Textbox(
                 label="GitHub Repository URL",
-                placeholder="https://github.com/username/repo",
+                placeholder="Enter GitHub repository URL...",
                 scale=4
             )
-            analyze_btn = gr.Button("Analyze", scale=1)
-        
+            output_format = gr.Dropdown(
+                choices=["all", "summary", "tree", "content"],
+                value="all",
+                label="Output Format",
+                scale=1
+            )
+
+        with gr.Row():
+            analyze_btn = gr.Button("🔍 Analyze Repository", variant="primary")
+            copy_analysis_btn = gr.Button("📋 Copy Analysis", variant="secondary")
+            copy_content_btn = gr.Button("📄 Copy Repository Content", variant="secondary")
+
         with gr.Column():
-            with gr.Accordion("Advanced Options", open=False):
-                output_format = gr.Radio(
-                    choices=["summary", "tree", "content", "all"],
-                    value="all",
-                    label="Output Format",
-                    info="Choose what information to include in the digest"
-                )
-        
-        with gr.Column():
-            with gr.Row():
-                download_btn = gr.Button("📥 Download as Markdown")
-                markdown_path = gr.Textbox(visible=False)
-            
-            with gr.Column():
-                with gr.Row():
-                    output_summary = gr.Textbox(
-                        label="Repository Summary",
-                        interactive=False,
-                        lines=3,
-                        show_copy_button=True
-                    )
-                
-                with gr.Row():
-                    output_tree = gr.Textbox(
-                        label="Directory Tree",
-                        interactive=False,
-                        lines=10,
-                        show_copy_button=True
-                    )
-                
-                with gr.Row():
-                    output_content = gr.Textbox(
-                        label="Content Digest",
-                        interactive=False,
-                        lines=15,
-                        show_copy_button=True
-                    )
-        
+            summary_box = gr.Textbox(label="Summary", lines=5, interactive=False)
+            tree_box = gr.Textbox(label="Directory Structure", lines=10, interactive=False)
+            content_box = gr.Textbox(label="Content Analysis", lines=10, interactive=False)
+            raw_content_box = gr.Textbox(label="Raw Content", visible=False)
+            markdown_path = gr.Textbox(label="Markdown File Path", visible=False)
+
+        def analyze_repo(url, format_choice):
+            summary, tree, content, md_path = GitHubService.analyze_repository(url, format_choice)
+            raw_content = GitHubService.get_raw_content(url)
+            return summary, tree, content, raw_content, md_path
+
         analyze_btn.click(
-            fn=GitHubService.analyze_repository,
-            inputs=[input_url, output_format],
-            outputs=[output_summary, output_tree, output_content, markdown_path]
+            fn=analyze_repo,
+            inputs=[repo_url, output_format],
+            outputs=[summary_box, tree_box, content_box, raw_content_box, markdown_path]
         )
-        
-        def download_markdown(path):
-            if path:
-                return path
-            return None
-        
-        download_btn.click(
-            fn=download_markdown,
-            inputs=[markdown_path],
-            outputs=[gr.File(label="Analysis Report")]
+
+        # Add JavaScript for copying analysis
+        copy_analysis_js = """
+        async function copyToClipboard(summary, tree, content) {
+            const text = [
+                "Summary:", 
+                summary,
+                "\nDirectory Structure:",
+                tree,
+                "\nContent Analysis:",
+                content
+            ].filter(Boolean).join("\n");
+            
+            try {
+                await navigator.clipboard.writeText(text);
+                console.log("Analysis copied to clipboard");
+            } catch (err) {
+                console.error("Failed to copy analysis: ", err);
+            }
+        }
+        """
+
+        # Add JavaScript for copying raw content
+        copy_content_js = """
+        async function copyContent(content) {
+            try {
+                await navigator.clipboard.writeText(content);
+                console.log("Repository content copied to clipboard");
+            } catch (err) {
+                console.error("Failed to copy content: ", err);
+            }
+        }
+        """
+
+        copy_analysis_btn.click(
+            fn=lambda x,y,z: None,
+            inputs=[summary_box, tree_box, content_box],
+            outputs=None,
+            js=copy_analysis_js
+        )
+
+        copy_content_btn.click(
+            fn=lambda x: None,
+            inputs=[raw_content_box],
+            outputs=None,
+            js=copy_content_js
         )
         
         gr.Markdown("""
@@ -78,5 +96,5 @@ def create_github_tab():
         - Get repository structure and content summary
         - Generate LLM-friendly text digest
         - Export analysis as Markdown
-        - Copy results to clipboard
+        - Copy analysis or full repository content to clipboard
         """) 
