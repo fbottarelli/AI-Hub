@@ -1,0 +1,17 @@
+[project]
+name = "gradio-exp"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "gradio>=5.3.0",
+    "langchain-community>=0.3.14",
+    "langchain-core>=0.3.29",
+    "langchain-openai>=0.3.0",
+    "langgraph>=0.2.62",
+    "python-dotenv>=1.0.1",
+]
+
+[tool.uv.workspace]
+members = ["multi_utility_app"]

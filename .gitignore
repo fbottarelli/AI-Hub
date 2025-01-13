@@ -3,3 +3,5 @@
 myenv/
 .venv/
 node_modules/
+
+experiments/gradio_exp/multi_utility_app/downloads
