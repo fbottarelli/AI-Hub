@@ -14,7 +14,6 @@ if not GOOGLE_API_KEY:
     raise ValueError("Please set GOOGLE_API_KEY in .env file")
 
 client = genai.Client(api_key=GOOGLE_API_KEY)
-MODEL_NAME = 'gemini-2.0-flash'  # Update model name to current version
 
 def extract_audio_from_video(video_path):
     """Extract audio from video file."""
@@ -28,7 +27,7 @@ def extract_audio_from_video(video_path):
     
     return temp_audio.name
 
-def transcribe_audio(audio_path):
+def transcribe_audio(audio_path, model_name):
     """Transcribe audio file using Google Gemini."""
     try:
         # Upload audio file to Gemini
@@ -42,7 +41,7 @@ def transcribe_audio(audio_path):
         - Punctuation and capitalization"""
         
         response = client.models.generate_content(
-            model=MODEL_NAME,
+            model=model_name,
             contents=[prompt, audio_file],
             config={
                 'temperature': 0.1,
@@ -55,7 +54,7 @@ def transcribe_audio(audio_path):
     except Exception as e:
         return f"Error transcribing audio: {str(e)}"
 
-def generate_summary(text):
+def generate_summary(text, model_name):
     """Generate summary using Google Gemini."""
     prompt = f"""Please provide a comprehensive summary of the following transcription. 
     Focus on the main points, key insights, and important details. 
@@ -66,7 +65,7 @@ def generate_summary(text):
     
     try:
         response = client.models.generate_content(
-            model=MODEL_NAME,
+            model=model_name,
             contents=prompt,
             config={
                 'temperature': 0.3,
@@ -83,6 +82,17 @@ def main():
     st.title("Media Content Summarizer")
     st.write("Upload a video or audio file to get a detailed summary of its content")
     
+    # Aggiungi selettore modello Gemini
+    model_options = {
+        "Gemini 2.0 Pro (Migliorato)": "gemini-2.0-pro-exp-02-05",
+        "Gemini 2.0 Flash Thinking": "gemini-2.0-flash-thinking-exp-01-21", 
+        "Gemini 2.0 Flash": "gemini-2.0-flash-exp",
+        "Gemini (Anniversario)": "gemini-exp-1206",
+        "LearnLM 1.5 Pro Sperimentale": "learnlm-1.5-pro-experimental"
+    }
+    model_choice = st.selectbox("Seleziona il modello Gemini", options=list(model_options.keys()))
+    selected_model = model_options[model_choice]
+
     # File uploader
     uploaded_file = st.file_uploader("Choose a file", type=['mp4', 'mp3', 'wav', 'avi'])
     
@@ -104,13 +114,13 @@ def main():
                 
                 # Transcribe
                 st.subheader("Transcription")
-                transcription = transcribe_audio(audio_path)
+                transcription = transcribe_audio(audio_path, selected_model)
                 st.text_area("Extracted Text", transcription, height=200)
                 
                 if transcription and not transcription.startswith("Error transcribing"):
                     # Generate summary
                     st.subheader("Summary")
-                    summary = generate_summary(transcription)
+                    summary = generate_summary(transcription, selected_model)
                     st.markdown(summary)
                 else:
                     st.error("Could not generate summary due to transcription error")
