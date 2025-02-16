@@ -62,11 +62,15 @@ class DeepgramApp:
                 
                 options = {
                     'smart_format': True,
-                    'model': 'nova-3',
+                    'model': 'nova-2',
                     'language': 'it'
                 }
                 
-                response = await self.dg_client.listen.prerecorded.transcribe_file(payload, options)
+                response = await asyncio.to_thread(
+                    self.dg_client.listen.rest.v("1").transcribe_file,
+                    payload,
+                    options
+                )
                 return response["results"]["channels"][0]["alternatives"][0]["transcript"]
         except Exception as e:
             return f"Error during transcription: {str(e)}"
@@ -146,7 +150,7 @@ def create_gradio_interface():
             audio_input = gr.Audio(
                 label="Upload Audio",
                 type="filepath",
-                sources=["upload"]
+                sources=["upload", "microphone"]
             )
             transcription_output = gr.Textbox(
                 label="Transcription",
