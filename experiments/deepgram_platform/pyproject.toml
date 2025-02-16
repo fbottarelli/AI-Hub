@@ -1,0 +1,16 @@
+[project]
+name = "deepgram-platform"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "gradio==5.0.0",
+    "deepgram-sdk>=3.1.0",
+    "python-dotenv==1.0.0",
+    "openai>=1.63.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
