@@ -44,36 +44,55 @@ class DeepgramApp:
         
         return " ".join(message)
 
-    async def transcribe_audio(self, audio_path, dg_api_key):
-        """Transcribe audio to text using Deepgram"""
-        if not dg_api_key:
-            return "Please provide a Deepgram API key first"
-        
-        if self.dg_api_key != dg_api_key:
-            self.initialize_clients(dg_api_key, None)
+    async def transcribe_audio(self, audio_path, provider, prompt, dg_api_key, openai_api_key):
+        """Transcribe audio to text using either Deepgram or OpenAI"""
+        if provider == "deepgram":
+            if not dg_api_key:
+                return "Please provide a Deepgram API key first"
+            
+            if self.dg_api_key != dg_api_key:
+                self.initialize_clients(dg_api_key, None)
 
-        try:
-            with open(audio_path, 'rb') as audio:
-                buffer_data = audio.read()
-                
-                payload = {
-                    "buffer": buffer_data,
-                }
-                
-                options = {
-                    'smart_format': True,
-                    'model': 'nova-2',
-                    'language': 'it'
-                }
-                
-                response = await asyncio.to_thread(
-                    self.dg_client.listen.rest.v("1").transcribe_file,
-                    payload,
-                    options
-                )
-                return response["results"]["channels"][0]["alternatives"][0]["transcript"]
-        except Exception as e:
-            return f"Error during transcription: {str(e)}"
+            try:
+                with open(audio_path, 'rb') as audio:
+                    buffer_data = audio.read()
+                    
+                    payload = {
+                        "buffer": buffer_data,
+                    }
+                    
+                    options = {
+                        'smart_format': True,
+                        'model': 'nova-2',
+                        'language': 'it'
+                    }
+                    
+                    response = await asyncio.to_thread(
+                        self.dg_client.listen.rest.v("1").transcribe_file,
+                        payload,
+                        options
+                    )
+                    return response["results"]["channels"][0]["alternatives"][0]["transcript"]
+            except Exception as e:
+                return f"Error during Deepgram transcription: {str(e)}"
+        
+        elif provider == "openai":
+            if not openai_api_key:
+                return "Please provide an OpenAI API key first"
+            
+            if self.openai_api_key != openai_api_key:
+                self.initialize_clients(None, openai_api_key)
+            
+            try:
+                with open(audio_path, "rb") as audio_file:
+                    transcription = self.openai_client.audio.transcriptions.create(
+                        model="whisper-1",
+                        file=audio_file,
+                        prompt=prompt if prompt else None
+                    )
+                    return transcription.text
+            except Exception as e:
+                return f"Error during OpenAI transcription: {str(e)}"
 
     async def text_to_speech(self, text, provider, voice, dg_api_key, openai_api_key):
         """Convert text to speech using either Deepgram or OpenAI"""
@@ -145,17 +164,29 @@ def create_gradio_interface():
 
         status_message = gr.Textbox(label="Status", interactive=False)
         
-        gr.Markdown("## Speech to Text (Deepgram)")
+        gr.Markdown("## Speech to Text")
         with gr.Row():
-            audio_input = gr.Audio(
-                label="Upload Audio",
-                type="filepath",
-                sources=["upload", "microphone"]
-            )
-            transcription_output = gr.Textbox(
-                label="Transcription",
-                interactive=False
-            )
+            with gr.Column():
+                audio_input = gr.Audio(
+                    label="Upload Audio",
+                    type="filepath",
+                    sources=["upload", "microphone"]
+                )
+                stt_provider = gr.Radio(
+                    choices=["deepgram", "openai"],
+                    label="STT Provider",
+                    value="deepgram"
+                )
+                prompt = gr.Textbox(
+                    label="Prompt (OpenAI only)",
+                    placeholder="Optional: Add a prompt to improve transcription accuracy",
+                    visible=False
+                )
+            with gr.Column():
+                transcription_output = gr.Textbox(
+                    label="Transcription",
+                    interactive=False
+                )
 
         gr.Markdown("## Text to Speech")
         with gr.Row():
@@ -188,9 +219,18 @@ def create_gradio_interface():
             outputs=[status_message]
         )
 
+        def update_prompt_visibility(provider):
+            return gr.update(visible=provider == "openai")
+
+        stt_provider.change(
+            update_prompt_visibility,
+            inputs=[stt_provider],
+            outputs=[prompt]
+        )
+
         audio_input.change(
-            lambda x, y: asyncio.run(app.transcribe_audio(x, y)),
-            inputs=[audio_input, dg_api_key],
+            lambda x, p, pr, d, o: asyncio.run(app.transcribe_audio(x, p, pr, d, o)),
+            inputs=[audio_input, stt_provider, prompt, dg_api_key, openai_api_key],
             outputs=[transcription_output]
         )
 
