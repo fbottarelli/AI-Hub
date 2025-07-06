@@ -6,6 +6,8 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 from pathlib import Path
+from langchain.chat_models import ChatOpenRouter
+from langchain.schema import HumanMessage
 
 # Load environment variables
 load_dotenv()
@@ -13,20 +15,23 @@ load_dotenv()
 # Get API keys from environment variables
 DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 
 class DeepgramApp:
     def __init__(self):
         self.dg_client = None
         self.openai_client = None
+        self.openrouter_client = None
         self.dg_api_key = None
         self.openai_api_key = None
+        self.openrouter_api_key = None
         
         # Initialize clients with environment variables if available
-        if DEEPGRAM_API_KEY or OPENAI_API_KEY:
-            self.initialize_clients(DEEPGRAM_API_KEY, OPENAI_API_KEY)
+        if DEEPGRAM_API_KEY or OPENAI_API_KEY or OPENROUTER_API_KEY:
+            self.initialize_clients(DEEPGRAM_API_KEY, OPENAI_API_KEY, OPENROUTER_API_KEY)
 
-    def initialize_clients(self, dg_api_key, openai_api_key):
-        """Initialize or update the Deepgram and OpenAI clients with the provided API keys"""
+    def initialize_clients(self, dg_api_key, openai_api_key, openrouter_api_key):
+        """Initialize or update the Deepgram, OpenAI and OpenRouter clients with the provided API keys"""
         message = []
         
         if dg_api_key:
@@ -38,11 +43,33 @@ class DeepgramApp:
             self.openai_api_key = openai_api_key
             self.openai_client = OpenAI(api_key=openai_api_key)
             message.append("OpenAI client initialized successfully!")
+
+        if openrouter_api_key:
+            self.openrouter_api_key = openrouter_api_key
+            self.openrouter_client = ChatOpenRouter(api_key=openrouter_api_key)
+            message.append("OpenRouter client initialized successfully!")
         
         if not message:
             return "Please provide at least one valid API key"
         
         return " ".join(message)
+
+    async def translate_text(self, text, openrouter_api_key):
+        """Translate text to English using OpenRouter"""
+        if not openrouter_api_key:
+            return "Please provide an OpenRouter API key first"
+        
+        if self.openrouter_api_key != openrouter_api_key:
+            self.initialize_clients(None, None, openrouter_api_key)
+        
+        try:
+            messages = [
+                HumanMessage(content=f"Translate the following text to English: {text}")
+            ]
+            response = self.openrouter_client.invoke(messages)
+            return response.content
+        except Exception as e:
+            return f"Error during translation: {str(e)}"
 
     async def transcribe_audio(self, audio_path, provider, prompt, dg_api_key, openai_api_key):
         """Transcribe audio to text using either Deepgram or OpenAI"""
@@ -51,7 +78,7 @@ class DeepgramApp:
                 return "Please provide a Deepgram API key first"
             
             if self.dg_api_key != dg_api_key:
-                self.initialize_clients(dg_api_key, None)
+                self.initialize_clients(dg_api_key, None, None)
 
             try:
                 with open(audio_path, 'rb') as audio:
@@ -81,7 +108,7 @@ class DeepgramApp:
                 return "Please provide an OpenAI API key first"
             
             if self.openai_api_key != openai_api_key:
-                self.initialize_clients(None, openai_api_key)
+                self.initialize_clients(None, openai_api_key, None)
             
             try:
                 with open(audio_path, "rb") as audio_file:
@@ -101,7 +128,7 @@ class DeepgramApp:
                 return None, "Please provide a Deepgram API key first"
             
             if self.dg_api_key != dg_api_key:
-                self.initialize_clients(dg_api_key, None)
+                self.initialize_clients(dg_api_key, None, None)
             
             try:
                 options = SpeakOptions(model=voice)
@@ -123,7 +150,7 @@ class DeepgramApp:
                 return None, "Please provide an OpenAI API key first"
             
             if self.openai_api_key != openai_api_key:
-                self.initialize_clients(None, openai_api_key)
+                self.initialize_clients(None, openai_api_key, None)
             
             try:
                 output_path = "output_speech.mp3"
@@ -160,6 +187,13 @@ def create_gradio_interface():
                     type="password",
                     value=OPENAI_API_KEY
                 )
+            with gr.Column():
+                openrouter_api_key = gr.Textbox(
+                    label="OpenRouter API Key",
+                    placeholder="Enter your OpenRouter API key",
+                    type="password",
+                    value=OPENROUTER_API_KEY
+                )
             init_button = gr.Button("Initialize/Update Clients")
 
         status_message = gr.Textbox(label="Status", interactive=False)
@@ -185,6 +219,11 @@ def create_gradio_interface():
             with gr.Column():
                 transcription_output = gr.Textbox(
                     label="Transcription",
+                    interactive=False
+                )
+                translate_button = gr.Button("Translate to English")
+                translation_output = gr.Textbox(
+                    label="English Translation",
                     interactive=False
                 )
 
@@ -215,7 +254,7 @@ def create_gradio_interface():
         # Event handlers
         init_button.click(
             app.initialize_clients,
-            inputs=[dg_api_key, openai_api_key],
+            inputs=[dg_api_key, openai_api_key, openrouter_api_key],
             outputs=[status_message]
         )
 
@@ -256,6 +295,12 @@ def create_gradio_interface():
             lambda x, p, v, d, o: asyncio.run(app.text_to_speech(x, p, v, d, o)),
             inputs=[text_input, provider, voice, dg_api_key, openai_api_key],
             outputs=[audio_output, tts_status]
+        )
+
+        translate_button.click(
+            lambda x, o: asyncio.run(app.translate_text(x, o)),
+            inputs=[transcription_output, openrouter_api_key],
+            outputs=[translation_output]
         )
 
         # Add footer
