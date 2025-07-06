@@ -1,0 +1,32 @@
+Metadata-Version: 2.4
+Name: medical-helper
+Version: 0.1.0
+Summary: A personal health tracking and management app
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: streamlit>=1.29.0
+Requires-Dist: pandas>=2.0.0
+Requires-Dist: pillow>=10.0.0
+Requires-Dist: python-dateutil>=2.8.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0.0; extra == "dev"
+Requires-Dist: black>=23.0.0; extra == "dev"
+Requires-Dist: isort>=5.0.0; extra == "dev"
+
+I want to develop an app to track my health in a simple yet effective way. The idea is to create a personal tool to manage wellness-related information, such as treatments, medications, diagnoses, and other aspects of daily health - essentially a smart health diary.
+
+The app, at least in its initial version, should allow:
+
+- Adding, modifying, viewing, and deleting health information in a simple and organized way
+- Storing documents or images, like a photo of a doctor's diagnosis, saving them with useful metadata for search and organization
+- Providing a solid foundation for a more complete system in the future
+
+Long-term, I'd like to integrate AI-based features, for example:
+- Automatic analysis of medical documents
+- Smart reminders for medications or appointments
+- Personalized suggestions based on history
+
+Technologies:
+- Streamlit for the frontend (for now)
+- Python for the backend
+- For a future version, I'd like to use AWS for the backend and React for the frontend

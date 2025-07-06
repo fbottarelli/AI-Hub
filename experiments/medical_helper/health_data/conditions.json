@@ -1,0 +1,15 @@
+{
+  "conditions": [
+    {
+      "id": "974dd8be-7f19-4cd1-97a9-72cb2ce2a65a",
+      "name": "Reflusso",
+      "description": "sdacasc",
+      "diagnosed_date": "2022-07-07",
+      "status": "active",
+      "severity": "moderate",
+      "tags": [],
+      "created_at": "2025-07-06T17:42:54.102168",
+      "updated_at": "2025-07-06T17:42:54.102174"
+    }
+  ]
+}

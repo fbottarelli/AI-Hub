@@ -1,0 +1,23 @@
+{
+  "records": [
+    {
+      "id": "b3182cd7-0d73-4cbb-bc53-f223b56433cb",
+      "category": "analysis",
+      "title": "Blood test",
+      "description": "Results: asdasd ",
+      "date": "2025-07-06",
+      "tags": [],
+      "metadata": {
+        "doctor_name": "",
+        "location": "",
+        "dosage": "",
+        "follow_up": ""
+      },
+      "attachments": [],
+      "created_at": "2025-07-06T17:44:58.620653",
+      "updated_at": "2025-07-06T17:45:11.293094",
+      "condition_id": "974dd8be-7f19-4cd1-97a9-72cb2ce2a65a",
+      "related_records": []
+    }
+  ]
+}
