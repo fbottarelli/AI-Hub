@@ -5,3 +5,7 @@ myenv/
 node_modules/
 
 experiments/gradio_exp/multi_utility_app/downloads
+*.pyc
+uv.lock
+pyproject.toml
+*.mp3
