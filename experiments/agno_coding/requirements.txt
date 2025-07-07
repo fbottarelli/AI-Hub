@@ -1,0 +1,8 @@
+agno
+openai
+anthropic
+google-generativeai
+python-dotenv
+sqlalchemy
+pydantic
+typing-extensions 
